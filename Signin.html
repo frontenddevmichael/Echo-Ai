@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ECHO Chat - Sign In</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="Style.css">
+    <script src="Script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Auth.js"></script>
+</head>
+
+<body>
+    <div class="modals">
+
+        <div class="form-container">
+            <button class="backtoHome" onclick="window.location.href = 'index.html'">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </button>
+            <div class="forms-wrapper">
+                <!-- Sign In Form -->
+                <div class="form signin-form active">
+                    <div class="logoWrap">
+                        <div class="logo">
+                            <div class="logo-container">
+                                <div class="wave-ring"></div>
+                                <div class="wave-ring"></div>
+                                <div class="wave-ring"></div>
+                                <div class="echo-logo">
+                                    <span class="bracket left">{</span>
+                                    <span class="letter">E</span>
+                                    <span class="letter">C</span>
+                                    <span class="letter">H</span>
+                                    <span class="letter">O</span>
+                                    <span class="bracket right">}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h1>Welcome Back</h1>
+                    <div class="emailInp">
+                        <input type="email" placeholder="someone@email.com"  id="signin-email"/>
+                    </div>
+                    <div class="passwordInp">
+                        <input type="password" placeholder="Atleast 8 characters"  id="signin-password"/>
+                    </div>
+                    <button type="submit" id="signin-btn">Sign In</button>
+                    <p>Don't have an account? <a href="#" onclick="switchToRegister(event)">Register</a></p>
+                    <div class="signinModal">
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div class="form register-form">
+                    <div class="logoWrap">
+                        <div class="logo">
+                            <div class="logo-container">
+                                <div class="wave-ring"></div>
+                                <div class="wave-ring"></div>
+                                <div class="wave-ring"></div>
+                                <div class="echo-logo">
+                                    <span class="bracket left">{</span>
+                                    <span class="letter">E</span>
+                                    <span class="letter">C</span>
+                                    <span class="letter">H</span>
+                                    <span class="letter">O</span>
+                                    <span class="bracket right">}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h1>Create Account</h1>
+                    <div class="usernameInp">
+                        <input type="text" placeholder="eg: John Doe" id="register-username" />
+                    </div>
+                    <div class="emailInp">
+                        <input type="email" placeholder="someone@example.com" id="register-email">
+                    </div>
+                    <div class="passwordInp">
+                        <input type="password" placeholder="Atleast 8 characters" id="register-password">
+                    </div>
+                    <div class="confirmpasswordInp">
+                        <input type="password" placeholder="Confirm Password"  id="register-confirm" />
+                    </div>
+                    <button id="register-btn">Register</button>
+                    <p>Already have an account? <a href="#" onclick="switchToSignin(event)">Sign In</a></p>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        function switchToRegister(e) {
+            e.preventDefault();
+            document.querySelector('.signin-form').classList.remove('active');
+            document.querySelector('.register-form').classList.add('active');
+            document.querySelector('.forms-wrapper').classList.add('show-register');
+        }
+
+        function switchToSignin(e) {
+            e.preventDefault();
+            document.querySelector('.register-form').classList.remove('active');
+            document.querySelector('.signin-form').classList.add('active');
+            document.querySelector('.forms-wrapper').classList.remove('show-register');
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            if (window.location.search.includes("register")) {
+                // open register tab
+                document.querySelector('.signin-form').classList.remove('active');
+                document.querySelector('.register-form').classList.add('active');
+                document.querySelector('.forms-wrapper').classList.add('show-register');
+            }
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ECHO Chat - Instant Code Help</title>
+    <meta name="description"
+        content="ECHO Chat is an AI-powered assistant that explains concepts, debugs code, and generates code on demand." />
+    <meta name="keywords" content="AI Chat, coding assistant, debug code, generate code, developer tools" />
+    <!-- Open Graph / Twitter -->
+    <meta property="og:title" content="ECHO Chat - Instant AI Assistant">
+    <meta property="og:description" content="Ask anything. Get instant answers, explanations and best practices.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-domain.com/">
+    <meta property="og:image" content="https://your-domain.com/cover-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="theme-color" content="#0D0D0D">
+
+    <link rel="stylesheet" href="Style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.0.0/css/all.min.css"
+        integrity crossorigin="anonymous">
+    <script src="Script.js"></script>
+    <!-- markdown implementation -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script> 
+
+</head>
+
+<body>
+    <div class="mainPage">
+        <div class="topBar">
+            <div class="logo">
+                <div class="logo-container">
+                    <div class="wave-ring"></div>
+                    <div class="wave-ring"></div>
+                    <div class="wave-ring"></div>
+                    <div class="echo-logo">
+                        <span class="bracket left">{</span>
+                        <span class="letter">E</span>
+                        <span class="letter">C</span>
+                        <span class="letter">H</span>
+                        <span class="letter">O</span>
+                        <span class="bracket right">}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="btn">
+                <button aria-label="Sign in to your account" onclick="window.location.href = 'Signin.html'">Sign
+                    in</button>
+                <button aria-label="Create new account" onclick="window.location.href='Signin.html?register'">Sign
+                    up</button>
+            </div>
+        </div>
+            <div class="chatArea">
+                <!-- Welcome/Kickoff Mode -->
+                <div class="kickoff-mode" id="kickoffMode">
+                    <div class="hero-section">
+                        <div class="hero-label">
+                            <i class="fas fa-sparkles"></i>
+                            <span>AI-Powered Assistant</span>
+                        </div>
+                        <h1 class="heroTxt">What would you like to Know today?</h1>
+                        <p class="hero-subtitle">Ask anything about code, get instant solutions, or start a conversation</p>
+                    </div>
+            
+                    <div class="feature-pills">
+                        <button class="pill">
+                            <i class="fas fa-bolt"></i>
+                            Debug my code
+                        </button>
+                        <button class="pill">
+                            <i class="fas fa-lightbulb"></i>
+                            Explain a concept
+                        </button>
+                        <button class="pill">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                            Generate code
+                        </button>
+                        <button class="pill">
+                            <i class="fas fa-graduation-cap"></i>
+                            Learn best practices
+                        </button>
+                    </div>
+                </div>
+            
+                <!-- Chat Mode (appears after first message) -->
+                <div class="chat-mode" id="chatMode" style="display: none;">
+                    <div class="messages-container">
+                        <div class="messages-header">
+                            <div class="chat-info">
+                                <h2 class="chat-title">Chat Session</h2>
+                                <span class="message-count">0 messages</span>
+                            </div>
+                            <button class="clear-history-btn" id="clearHistoryBtn">
+                                <i class="fas fa-rotate-right"></i>
+                                New Chat
+                            </button>
+                        </div>
+                        <div class="messages-list" id="messagesList">
+                            <!-- Empty state placeholder -->
+                            <div class="empty-state" id="emptyState">
+                                <div class="empty-icon">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <h3>Ready to chat</h3>
+                                <p>Your messages will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Input Container (always visible) -->
+                <div class="inputContaienr">
+                    <div class="input-wrapper">
+                        <div class="input-content">
+                            <input type="text" placeholder="Ask whatever you want..." aria-label="Chat input">
+                            <div class="input-actions">
+                                <div class="input-tools">
+                                    <button class="tool-btn" aria-label="Attach file" title="Attach file">
+                                        <i class="fas fa-paperclip"></i>
+                                        <p>Add attachment</p>
+                                    </button>
+                                    <button class="tool-btn" aria-label="Add image" title="Add image">
+                                        <i class="fas fa-image"></i>
+                                        <p>Add image</p>
+                                    </button>
+                                </div>
+                                <button class="send-btn" aria-label="Send message">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+    
+</body>
+<script>
+
+</script>
+
+</html>
