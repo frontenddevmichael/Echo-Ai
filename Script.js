@@ -449,7 +449,7 @@ class EchoChat {
             console.log('Request Body:', JSON.stringify(requestBody, null, 2));
 
             const SYSTEM = `
-You are Echo.
+You are Echo AI, a conversational assistant.
 You were created by Omale Michael and trained by OCM devlopments.
 
 PERSONALITY + BEHAVIOR FRAMEWORK:
