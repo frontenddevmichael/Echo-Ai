@@ -570,6 +570,8 @@ body.dark-theme button:last-child:hover {
         padding: 16px;
     }
 
+
+
     .theme-toggle {
         width: 48px;
         height: 48px;
@@ -2364,16 +2366,18 @@ button .btn-icon-only {
 
     /* Top Bar Adjustments */
     .topBar {
-        width: calc(100% - 24px);
+        width: calc(100% );
         height: 56px;
         padding: 0 12px;
-        top: 12px;
+        position: fixed;
+        top: 12px
     }
 
     /* Buttons: Show text with smaller padding */
     button {
-        padding: 7px 14px;
-        font-size: 13px;
+
+        padding: 6px 10px;
+        font-size: .8rem;
         gap: 6px;
     }
 
