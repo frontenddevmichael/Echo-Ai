@@ -23,7 +23,7 @@
     <script src="Script.js"></script>
     <!-- markdown implementation -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
 </head>
 
@@ -52,91 +52,95 @@
                     up</button>
             </div>
         </div>
-            <div class="chatArea">
-                <!-- Welcome/Kickoff Mode -->
-                <div class="kickoff-mode" id="kickoffMode">
-                    <div class="hero-section">
-                        <div class="hero-label">
-                            <i class="fas fa-sparkles"></i>
-                            <span>AI-Powered Assistant</span>
-                        </div>
-                        <h1 class="heroTxt">What would you like to Know today?</h1>
-                        <p class="hero-subtitle">Ask anything about code, get instant solutions, or start a conversation</p>
+        <div class="chatArea">
+            <!-- Welcome/Kickoff Mode -->
+            <div class="kickoff-mode" id="kickoffMode">
+                <div class="hero-section">
+                    <div class="hero-label">
+                        <i class="fas fa-sparkles"></i>
+                        <span>AI-Powered Assistant</span>
                     </div>
-            
-                    <div class="feature-pills">
-                        <button class="pill">
-                            <i class="fas fa-bolt"></i>
-                            Debug my code
-                        </button>
-                        <button class="pill">
-                            <i class="fas fa-lightbulb"></i>
-                            Explain a concept
-                        </button>
-                        <button class="pill">
-                            <i class="fas fa-wand-magic-sparkles"></i>
-                            Generate code
-                        </button>
-                        <button class="pill">
-                            <i class="fas fa-graduation-cap"></i>
-                            Learn best practices
-                        </button>
-                    </div>
+                    <h1 class="heroTxt">What would you like to Know today?</h1>
+                    <p class="hero-subtitle">Ask anything about code, get instant solutions, or start a conversation</p>
                 </div>
-            
-                <!-- Chat Mode (appears after first message) -->
-                <div class="chat-mode" id="chatMode" style="display: none;">
-                    <div class="messages-container">
-                        <div class="messages-header">
-                            <div class="chat-info">
-                                <h2 class="chat-title">Chat Session</h2>
-                                <span class="message-count">0 messages</span>
-                            </div>
-                            <button class="clear-history-btn" id="clearHistoryBtn">
-                                <i class="fas fa-rotate-right"></i>
-                                New Chat
-                            </button>
-                        </div>
-                        <div class="messages-list" id="messagesList">
-                            <!-- Empty state placeholder -->
-                            <div class="empty-state" id="emptyState">
-                                <div class="empty-icon">
-                                    <i class="fas fa-comments"></i>
-                                </div>
-                                <h3>Ready to chat</h3>
-                                <p>Your messages will appear here</p>
-                            </div>
-                        </div>
-                    </div>
+
+                <div class="feature-pills">
+                    <button class="pill">
+                        <i class="fas fa-bolt"></i>
+                        Debug my code
+                    </button>
+                    <button class="pill">
+                        <i class="fas fa-lightbulb"></i>
+                        Explain a concept
+                    </button>
+                    <button class="pill">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        Generate code
+                    </button>
+                    <button class="pill">
+                        <i class="fas fa-graduation-cap"></i>
+                        Learn best practices
+                    </button>
                 </div>
-            
-                <!-- Input Container (always visible) -->
-                <div class="inputContaienr">
-                    <div class="input-wrapper">
-                        <div class="input-content">
-                            <input type="text" placeholder="Ask whatever you want..." aria-label="Chat input">
-                            <div class="input-actions">
-                                <div class="input-tools">
-                                    <button class="tool-btn" aria-label="Attach file" title="Attach file">
-                                        <i class="fas fa-paperclip"></i>
-                                        <p>Add attachment</p>
-                                    </button>
-                                    <button class="tool-btn" aria-label="Add image" title="Add image">
-                                        <i class="fas fa-image"></i>
-                                        <p>Add image</p>
-                                    </button>
-                                </div>
-                                <button class="send-btn" aria-label="Send message">
-                                    <i class="fas fa-arrow-up"></i>
-                                </button>
+            </div>
+
+            <!-- Chat Mode (appears after first message) -->
+            <div class="chat-mode" id="chatMode" style="display: none;">
+                <div class="messages-container">
+                    <div class="messages-header">
+                        <div class="chat-info">
+                            <h2 class="chat-title">Chat Session</h2>
+                            <span class="message-count">0 messages</span>
+                        </div>
+                        <button class="clear-history-btn" id="clearHistoryBtn">
+                            <i class="fas fa-rotate-right"></i>
+                            New Chat
+                        </button>
+                    </div>
+                    <div class="messages-list" id="messagesList">
+                        <!-- Empty state placeholder -->
+                        <div class="empty-state" id="emptyState">
+                            <div class="empty-icon">
+                                <i class="fas fa-comments"></i>
                             </div>
+                            <h3>Ready to chat</h3>
+                            <p>Your messages will appear here</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Input Container (always visible) -->
+            <div class="inputContaienr">
+                <div class="input-wrapper">
+                    <div class="input-content">
+                        <input type="text" placeholder="Ask whatever you want..." aria-label="Chat input">
+                        <div class="input-actions">
+                            <!-- In your input-actions section -->
+                            <div class="input-tools">
+                                <!-- Attachment Button -->
+                                <button class="tool-btn" aria-label="Attach file">
+                                    <i class="fas fa-paperclip btn-icon-only"></i>
+                                    <span class="btn-text">Attach</span>
+                                </button>
+
+                                <!-- Image Button -->
+                                <button class="tool-btn" aria-label="Upload image">
+                                    <i class="fas fa-image btn-icon-only"></i>
+                                    <span class="btn-text">Image</span>
+                                </button>
+                            </div>
+                            <button class="send-btn" aria-label="Send message">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    
+
 </body>
 <script>
 
