@@ -1,6 +1,6 @@
 // =========================================
-// ECHO CHAT - FULL FEATURED VERSION WITH MARKDOWN
-// Working Gemini AI Integration with Markdown Support
+// ECHO CHAT - FULL FEATURED VERSION WITH ALL UPDATES
+// Complete Version with: Streaming, Conversations, Voice, Message Actions
 // =========================================
 
 class EchoChat {
@@ -9,6 +9,8 @@ class EchoChat {
         this.timeouts = [];
         this.intervals = [];
         this.isGuest = true;
+        this.isRecording = false;
+        this.recognition = null;
 
         this.CONFIG = {
             BOT_RESPONSE_DELAY: 1500,
@@ -23,8 +25,8 @@ class EchoChat {
         this.API_CONFIG = {
             GEMINI_API_KEY: 'AIzaSyB8ai1DzTRRJiZG8zWa_iBUn469xHGEm5I',
             GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
-            MODEL: 'models/gemini-2.0-flash',
-            VISION_MODEL: 'models/gemini-2.0-flash'
+            MODEL: 'models/gemini-2.0-flash-exp',
+            VISION_MODEL: 'models/gemini-2.0-flash-exp'
         };
 
         this.STORAGE_KEYS = {
@@ -33,14 +35,24 @@ class EchoChat {
             drafts: 'echo-chat-drafts',
             mode: 'echo-chat-mode',
             userStatus: 'echo-chat-user-status',
-            conversationHistory: 'echo-chat-conversation-history'
+            conversationHistory: 'echo-chat-conversation-history',
+            conversations: 'echo-conversations',
+            currentConversation: 'echo-current-conversation'
         };
 
         this.conversationHistory = [];
         this.currentImage = null;
         this.VALID_MESSAGE_TYPES = new Set(['user', 'bot']);
+        this.conversations = [];
+        this.currentConversationId = null;
 
         this.init();
+
+        this.storage = {
+            messages: [],
+            conversations: [],
+            conversationHistory: []
+        };
     }
 
     init() {
@@ -58,10 +70,11 @@ class EchoChat {
         this.initAnimations();
         this.initTheme();
         this.initMarkdown();
-        this.loadMessageHistory();
+        this.initConversationManager();
+        this.initVoiceInput();
         this.loadConversationHistory();
         this.loadDraft();
-        console.log('Echo Chat initialized successfully');
+        console.log('Echo Chat initialized successfully with all features');
     }
 
     // =========================================
@@ -134,13 +147,14 @@ class EchoChat {
 
     // =========================================
     // ELEMENT INITIALIZATION
-    // =========================================
     initElements() {
-        this.input = document.querySelector('input[type="text"]');
+        // Fixed selectors to match your HTML
+        this.input = document.querySelector('.input-content input[type="text"]');
         this.sendBtn = document.querySelector('.send-btn');
         this.inputWrapper = document.querySelector('.input-wrapper');
         this.attachBtn = document.querySelector('.tool-btn:nth-child(1)');
         this.imageBtn = document.querySelector('.tool-btn:nth-child(2)');
+        this.voiceBtn = document.getElementById('voiceInputBtn');
         this.pills = document.querySelectorAll('.pill');
         this.topBar = document.querySelector('.topBar');
         this.kickoffMode = document.getElementById('kickoffMode');
@@ -150,22 +164,13 @@ class EchoChat {
         this.emptyState = document.getElementById('emptyState');
         this.messageCount = document.querySelector('.message-count');
         this.clearHistoryBtn = document.getElementById('clearHistoryBtn');
-        this.themeToggle = document.querySelector('.theme-toggle');
 
-        if (this.input) {
-            this.input.setAttribute('aria-label', 'Type your message');
-            this.input.setAttribute('maxlength', this.CONFIG.MAX_MESSAGE_LENGTH);
-        }
-        if (this.sendBtn) this.sendBtn.setAttribute('aria-label', 'Send message');
-        if (this.attachBtn) this.attachBtn.setAttribute('aria-label', 'Attach file');
-        if (this.imageBtn) this.imageBtn.setAttribute('aria-label', 'Upload image');
-        if (this.messagesList) {
-            this.messagesList.setAttribute('role', 'log');
-            this.messagesList.setAttribute('aria-live', 'polite');
-            this.messagesList.setAttribute('aria-atomic', 'false');
-            this.messagesList.setAttribute('aria-label', 'Chat messages');
-        }
-        if (this.clearHistoryBtn) this.clearHistoryBtn.setAttribute('aria-label', 'Clear chat history');
+        // ADD DEBUG LOGGING
+        console.log('✓ Elements initialized:', {
+            input: !!this.input,
+            sendBtn: !!this.sendBtn,
+            messagesList: !!this.messagesList
+        });
     }
 
     addEventHandler(element, event, handler) {
@@ -248,6 +253,407 @@ class EchoChat {
     }
 
     // =========================================
+    // CONVERSATION MANAGER
+    // =========================================
+    initSidebarClickOutside() {
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('conversationSidebar');
+            const toggleBtn = document.querySelector('.toggle-sidebar-btn');
+
+            if (!sidebar || !sidebar.classList.contains('open')) return;
+
+            // Check if click is outside sidebar and toggle button
+            if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+    }
+    initConversationManager() {
+        this.conversations = this.loadConversations();
+        this.currentConversationId = this.getCurrentConversationId();
+
+        if (!this.currentConversationId || !this.conversations.find(c => c.id === this.currentConversationId)) {
+            this.createNewConversation();
+        } else {
+            this.loadConversation(this.currentConversationId);
+            this.updateConversationsList();
+        }
+
+        
+    }
+
+    loadConversations() {
+        try {
+            const stored = localStorage.getItem(this.STORAGE_KEYS.conversations);
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.error('Error loading conversations:', error);
+            return [];
+        }
+    }
+
+    saveConversations() {
+        try {
+            localStorage.setItem(this.STORAGE_KEYS.conversations, JSON.stringify(this.conversations));
+        } catch (error) {
+            console.error('Error saving conversations:', error);
+        }
+    }
+
+    getCurrentConversationId() {
+        return localStorage.getItem(this.STORAGE_KEYS.currentConversation);
+    }
+
+    setCurrentConversationId(id) {
+        localStorage.setItem(this.STORAGE_KEYS.currentConversation, id);
+        this.currentConversationId = id;
+    }
+
+    createNewConversation(title = null) {
+        const conversation = {
+            id: 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            title: title || 'New Chat',
+            messages: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            messageCount: 0
+        };
+
+        this.conversations.unshift(conversation);
+        this.setCurrentConversationId(conversation.id);
+        this.saveConversations();
+
+        // Clear current messages
+        if (this.messagesList) {
+            this.messagesList.innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Ready to chat</h3>
+                    <p>Your messages will appear here</p>
+                </div>
+            `;
+            this.emptyState = document.getElementById('emptyState');
+        }
+
+        this.conversationHistory = [];
+        this.switchToKickoffMode();
+        this.updateConversationsList();
+        this.showFeedback('New conversation started', 'success');
+
+        return conversation;
+    }
+
+    loadConversation(conversationId) {
+        const conversation = this.conversations.find(c => c.id === conversationId);
+        if (!conversation) return;
+
+        this.setCurrentConversationId(conversationId);
+
+        // Clear current messages
+        if (this.messagesList) {
+            this.messagesList.innerHTML = '';
+        }
+
+        // Clear conversation history for fresh start
+        this.conversationHistory = [];
+
+        // Reload messages
+        if (conversation.messages && conversation.messages.length > 0) {
+            this.switchToChatMode();
+            if (this.emptyState) {
+                this.emptyState.style.display = 'none';
+            }
+
+            conversation.messages.forEach(msg => {
+                this.renderMessage(msg.text, msg.type, msg.timestamp, false, msg.image, msg.isMarkdown);
+
+                // Rebuild conversation history for context
+                if (msg.type === 'user') {
+                    this.conversationHistory.push({
+                        role: 'user',
+                        parts: [{ text: msg.text }]
+                    });
+                } else if (msg.type === 'bot') {
+                    this.conversationHistory.push({
+                        role: 'model',
+                        parts: [{ text: msg.text }]
+                    });
+                }
+            });
+
+            this.updateMessageCount();
+        } else {
+            this.switchToKickoffMode();
+        }
+
+        this.updateConversationsList();
+    }
+
+    updateConversationTitle(title) {
+        const conversation = this.conversations.find(c => c.id === this.currentConversationId);
+        if (conversation) {
+            conversation.title = title;
+            conversation.updatedAt = Date.now();
+            this.saveConversations();
+            this.updateConversationsList();
+        }
+    }
+
+    autoGenerateTitle(firstMessage) {
+        // Generate title from first message
+        let title = firstMessage.slice(0, 40);
+        if (firstMessage.length > 40) {
+            title += '...';
+        }
+        this.updateConversationTitle(title);
+    }
+
+    deleteConversation(conversationId) {
+        const index = this.conversations.findIndex(c => c.id === conversationId);
+        if (index > -1) {
+            this.conversations.splice(index, 1);
+            this.saveConversations();
+
+            if (conversationId === this.currentConversationId) {
+                this.createNewConversation();
+            }
+
+            this.updateConversationsList();
+            this.showFeedback('Conversation deleted', 'success');
+        }
+    }
+
+    updateConversationsList() {
+        const listContainer = document.getElementById('conversationsList');
+        if (!listContainer) return;
+
+        if (this.conversations.length === 0) {
+            listContainer.innerHTML = `
+                <div class="no-conversations">
+                    <i class="fas fa-inbox"></i>
+                    <p>No conversations yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        listContainer.innerHTML = this.conversations.map(conv => `
+            <div class="conversation-item ${conv.id === this.currentConversationId ? 'active' : ''}" 
+                 data-id="${conv.id}"
+                 onclick="app.loadConversation('${conv.id}')">
+                <div class="conversation-content">
+                    <div class="conversation-title">${this.escapeHtml(conv.title)}</div>
+                    <div class="conversation-meta">
+                        ${conv.messageCount} messages • ${this.formatRelativeTime(conv.updatedAt)}
+                    </div>
+                </div>
+                <button class="delete-conversation" 
+                        onclick="event.stopPropagation(); app.confirmDeleteConversation('${conv.id}')"
+                        aria-label="Delete conversation">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    confirmDeleteConversation(conversationId) {
+        if (confirm('Delete this conversation? This action cannot be undone.')) {
+            this.deleteConversation(conversationId);
+        }
+    }
+
+    formatRelativeTime(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 7) return `${days}d ago`;
+
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    toggleSidebar() {
+        const sidebar = document.getElementById('conversationSidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('open');
+        }
+    }
+
+    searchConversations(query) {
+        const searchTerm = query.toLowerCase();
+
+        const filtered = this.conversations.filter(conv =>
+            conv.title.toLowerCase().includes(searchTerm) ||
+            conv.messages.some(msg => msg.text.toLowerCase().includes(searchTerm))
+        );
+
+        const listContainer = document.getElementById('conversationsList');
+        if (!listContainer) return;
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = `
+                <div class="no-conversations">
+                    <i class="fas fa-search"></i>
+                    <p>No results found</p>
+                </div>
+            `;
+            return;
+        }
+
+        listContainer.innerHTML = filtered.map(conv => `
+            <div class="conversation-item ${conv.id === this.currentConversationId ? 'active' : ''}" 
+                 data-id="${conv.id}"
+                 onclick="app.loadConversation('${conv.id}')">
+                <div class="conversation-content">
+                    <div class="conversation-title">${this.escapeHtml(conv.title)}</div>
+                    <div class="conversation-meta">
+                        ${conv.messageCount} messages • ${this.formatRelativeTime(conv.updatedAt)}
+                    </div>
+                </div>
+                <button class="delete-conversation" 
+                        onclick="event.stopPropagation(); app.confirmDeleteConversation('${conv.id}')"
+                        aria-label="Delete conversation">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    // =========================================
+    // VOICE INPUT
+    // =========================================
+    initVoiceInput() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            console.warn('Speech recognition not supported');
+            this.hideVoiceButton();
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = new SpeechRecognition();
+
+        this.recognition.continuous = false;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onstart = () => {
+            this.isRecording = true;
+            this.showRecordingUI();
+        };
+
+        this.recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            if (this.input) {
+                this.input.value = finalTranscript || interimTranscript;
+                this.input.dispatchEvent(new Event('input'));
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            this.stopVoiceInput();
+
+            if (event.error === 'not-allowed') {
+                this.showFeedback('Microphone access denied', 'error');
+            } else if (event.error === 'no-speech') {
+                this.showFeedback('No speech detected', 'error');
+            }
+        };
+
+        this.recognition.onend = () => {
+            this.stopVoiceInput();
+        };
+    }
+
+    startVoiceInput() {
+        if (!this.recognition) {
+            this.showFeedback('Voice input not supported', 'error');
+            return;
+        }
+
+        try {
+            this.recognition.start();
+            this.addHapticFeedback('medium');
+        } catch (error) {
+            console.error('Failed to start voice input:', error);
+            this.showFeedback('Failed to start voice input', 'error');
+        }
+    }
+
+    stopVoiceInput() {
+        if (this.recognition && this.isRecording) {
+            this.recognition.stop();
+            this.isRecording = false;
+            this.hideRecordingUI();
+        }
+    }
+
+    showRecordingUI() {
+        const voiceBtn = document.getElementById('voiceInputBtn');
+        if (voiceBtn) {
+            voiceBtn.classList.add('recording');
+            voiceBtn.querySelector('i').className = 'fas fa-stop';
+        }
+
+        // Create recording indicator
+        if (!document.getElementById('recordingIndicator')) {
+            const indicator = document.createElement('div');
+            indicator.id = 'recordingIndicator';
+            indicator.className = 'recording-indicator';
+            indicator.innerHTML = `
+                <div class="pulse-dot"></div>
+                <span>Listening...</span>
+            `;
+            document.body.appendChild(indicator);
+        }
+    }
+
+    hideRecordingUI() {
+        const voiceBtn = document.getElementById('voiceInputBtn');
+        if (voiceBtn) {
+            voiceBtn.classList.remove('recording');
+            voiceBtn.querySelector('i').className = 'fas fa-microphone';
+        }
+
+        const indicator = document.getElementById('recordingIndicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    hideVoiceButton() {
+        const voiceBtn = document.getElementById('voiceInputBtn');
+        if (voiceBtn) {
+            voiceBtn.style.display = 'none';
+        }
+    }
+
+    // =========================================
     // EVENT LISTENERS
     // =========================================
     attachEventListeners() {
@@ -270,7 +676,7 @@ class EchoChat {
             this.addEventHandler(pill, 'click', (e) => this.handlePillClick(e));
         });
         if (this.clearHistoryBtn) {
-            this.addEventHandler(this.clearHistoryBtn, 'click', () => this.clearMessageHistory());
+            this.addEventHandler(this.clearHistoryBtn, 'click', () => this.clearCurrentConversation());
         }
         if (this.themeToggle) {
             this.addEventHandler(this.themeToggle, 'click', () => this.toggleTheme());
@@ -343,7 +749,7 @@ class EchoChat {
     }
 
     // =========================================
-    // SEND MESSAGE
+    // SEND MESSAGE WITH STREAMING
     // =========================================
     async handleSend() {
         if (!this.isElementReady(this.input) || !this.input.value.trim()) {
@@ -393,10 +799,10 @@ class EchoChat {
 
             this.showTypingIndicator();
 
-            const response = await this.sendToGemini(message, imageToSend);
+            // Use streaming response
+            const response = await this.sendToGeminiStreaming(message, imageToSend);
 
             this.hideTypingIndicator();
-            this.renderMessage(response, 'bot', null, true, null, true); // Added markdown flag
 
         } catch (error) {
             this.hideTypingIndicator();
@@ -419,11 +825,54 @@ class EchoChat {
     }
 
     // =========================================
-    // GEMINI API INTEGRATION
+    // GEMINI STREAMING API
     // =========================================
-    async sendToGemini(userMessage, imageData = null) {
-        const endpoint = `${this.API_CONFIG.GEMINI_BASE_URL}/${this.API_CONFIG.MODEL}:generateContent`;
-        const url = `${endpoint}?key=${this.API_CONFIG.GEMINI_API_KEY}`;
+    async sendToGeminiStreaming(userMessage, imageData = null) {
+        const endpoint = `${this.API_CONFIG.GEMINI_BASE_URL}/${this.API_CONFIG.MODEL}:streamGenerateContent`;
+        const url = `${endpoint}?alt=sse&key=${this.API_CONFIG.GEMINI_API_KEY}`;
+
+        // Create placeholder bot message
+        const botMessageEl = document.createElement('div');
+        botMessageEl.className = 'message bot';
+        botMessageEl.setAttribute('role', 'article');
+        botMessageEl.setAttribute('aria-label', 'bot message');
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'message-content markdown-content';
+
+        const timeEl = document.createElement('div');
+        timeEl.className = 'message-timestamp';
+        timeEl.textContent = this.formatTimestamp(new Date().toISOString());
+
+        botMessageEl.appendChild(contentEl);
+        botMessageEl.appendChild(timeEl);
+
+        if (this.emptyState) {
+            this.emptyState.style.display = 'none';
+        }
+
+        this.messagesList.appendChild(botMessageEl);
+        this.scrollToBottom();
+
+        let fullResponse = '';
+
+        const SYSTEM = `
+You are Echo AI, a conversational assistant.
+You were created by Omale Michael and trained by OCM developments.
+
+PERSONALITY + BEHAVIOR FRAMEWORK:
+1) Echo is concise and precise. Words are chosen with intention.
+2) Echo is assistant-like: professional, composed, friendly, helpful.
+3) Echo is solutions-first: prefers code and implementation over philosophy.
+4) Echo asks one sharp clarifying question if the user is vague.
+5) Echo values clarity, velocity, correctness.
+6) Echo avoids unnecessary explanations unless the user requests them.
+7) Echo is respectful and gives direct, non-sentimental suggestions.
+8) Echo never uses "as an AI" or any meta commentary.
+
+MANDATE:
+Echo always adheres to this persona.
+`;
 
         let requestBody;
 
@@ -435,123 +884,99 @@ class EchoChat {
                 contents: this.buildConversationContents(userMessage, {
                     mime_type: mimeType,
                     data: base64Data
-                })
+                }),
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 2048,
+                }
             };
         } else {
             requestBody = {
-                contents: this.buildConversationContents(userMessage)
+                contents: [
+                    { role: "user", parts: [{ text: SYSTEM + "\n\n" + userMessage }] }
+                ],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 2048,
+                }
             };
         }
 
         try {
-            console.log('=== GEMINI API REQUEST ===');
-            console.log('URL:', url);
-            console.log('Request Body:', JSON.stringify(requestBody, null, 2));
-
-            const SYSTEM = `
-You are Echo AI, a conversational assistant.
-You were created by Omale Michael and trained by OCM devlopments.
-
-PERSONALITY + BEHAVIOR FRAMEWORK:
-1) Echo is concise and precise. Words are chosen with intention.
-2) Echo is assistant-like: professional, composed, friendly, helpful.
-3) Echo is solutions-first: prefers code and implementation over philosophy.
-4) Echo asks one sharp clarifying question if the user is vague.
-5) Echo values clarity, velocity, correctness.
-6) Echo avoids unnecessary explanations unless the user requests them.
-7) Echo is respectful and gives direct, non-sentimental suggestions.
-8) Echo never uses “as an AI” or any meta commentary.
-
-MANDATE:
-Echo always adheres to this persona.
-`;
-
-            requestBody = {
-                contents: [
-                    { role: "user", parts: [{ text: SYSTEM + "\n\n" + userMessage }] }
-                ]
-            }
-
-
-
             const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             });
 
-            console.log('Response Status:', response.status);
-            console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
-
-            const responseText = await response.text();
-            console.log('Response Body:', responseText);
-
             if (!response.ok) {
-                let errorMessage = `API Error: ${response.status}`;
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-                try {
-                    const errorData = JSON.parse(responseText);
-                    console.error('Parsed Error:', errorData);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-                    if (errorData.error) {
-                        errorMessage = errorData.error.message || errorMessage;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-                        // Specific error handling
-                        if (errorData.error.code === 400) {
-                            errorMessage = 'Invalid request format';
-                        } else if (errorData.error.code === 403) {
-                            errorMessage = 'API key invalid or API not enabled. Check Google Cloud Console.';
-                        } else if (errorData.error.code === 429) {
-                            errorMessage = 'Rate limit exceeded. Please wait a moment.';
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const jsonStr = line.slice(6);
+                            if (jsonStr.trim() === '[DONE]') continue;
+
+                            const data = JSON.parse(jsonStr);
+                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                            if (text) {
+                                fullResponse += text;
+                                const htmlContent = this.parseMarkdown(fullResponse);
+                                contentEl.innerHTML = htmlContent;
+                                this.styleMarkdownContent(contentEl);
+                                this.scrollToBottom();
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse SSE data:', e);
                         }
                     }
-                } catch (e) {
-                    console.error('Could not parse error response:', e);
-                    errorMessage = `${errorMessage} - ${responseText}`;
                 }
-
-                throw new Error(errorMessage);
             }
 
-            const data = JSON.parse(responseText);
-            console.log('=== API SUCCESS ===');
-            console.log('Full Response:', data);
+            // Remove streaming cursor
 
-            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                console.error('Invalid response structure:', data);
-                throw new Error('Invalid response format from API');
-            }
 
-            const botResponse = data.candidates[0].content.parts[0].text;
-            console.log('Bot Response:', botResponse);
+            // Add message actions
+            this.addMessageActions(botMessageEl, fullResponse);
 
-            // Add to conversation history
+            // Update conversation history
             this.conversationHistory.push({
                 role: 'user',
                 parts: [{ text: userMessage }]
             });
             this.conversationHistory.push({
                 role: 'model',
-                parts: [{ text: botResponse }]
+                parts: [{ text: fullResponse }]
             });
 
-            // Keep history manageable
             if (this.conversationHistory.length > 20) {
                 this.conversationHistory = this.conversationHistory.slice(-20);
             }
 
-            // Save conversation history
             this.saveConversationHistory();
+            this.saveMessageToConversation(fullResponse, 'bot', null, true);
+            this.updateMessageCount();
 
-            return botResponse;
+            return fullResponse;
 
         } catch (error) {
-            console.error('=== GEMINI API ERROR ===');
-            console.error('Error Name:', error.name);
-            console.error('Error Message:', error.message);
-            console.error('Error Stack:', error.stack);
+            console.error('Streaming error:', error);
+            botMessageEl.remove();
             throw error;
         }
     }
@@ -573,6 +998,82 @@ Echo always adheres to this persona.
         });
 
         return contents;
+    }
+
+    // =========================================
+    // MESSAGE ACTIONS (Copy, Regenerate, Edit)
+    // =========================================
+    addMessageActions(messageEl, messageText) {
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'message-actions';
+        actionsContainer.innerHTML = `
+            <button class="action-btn" onclick="app.copyMessage(this)" title="Copy message">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="action-btn" onclick="app.regenerateResponse(this)" title="Regenerate">
+                <i class="fas fa-refresh"></i>
+            </button>
+        `;
+
+        // Store message text as data attribute for easy access
+        messageEl.dataset.messageText = messageText;
+
+        messageEl.appendChild(actionsContainer);
+    }
+
+    copyMessage(button) {
+        const messageEl = button.closest('.message');
+        const messageText = messageEl.dataset.messageText || messageEl.querySelector('.message-content').textContent;
+
+        navigator.clipboard.writeText(messageText).then(() => {
+            this.showFeedback('Message copied!', 'success');
+
+            // Visual feedback
+            const icon = button.querySelector('i');
+            const originalClass = icon.className;
+            icon.className = 'fas fa-check';
+
+            setTimeout(() => {
+                icon.className = originalClass;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            this.showFeedback('Failed to copy message', 'error');
+        });
+    }
+
+    async regenerateResponse(button) {
+        const messageEl = button.closest('.message');
+
+        // Find the previous user message
+        let prevElement = messageEl.previousElementSibling;
+        while (prevElement && !prevElement.classList.contains('user')) {
+            prevElement = prevElement.previousElementSibling;
+        }
+
+        if (!prevElement) {
+            this.showFeedback('Cannot find original message', 'error');
+            return;
+        }
+
+        const userMessage = prevElement.dataset.messageText || prevElement.querySelector('.message-content').textContent;
+
+        // Remove the old bot response
+        messageEl.remove();
+
+        // Show typing indicator
+        this.showTypingIndicator();
+
+        try {
+            // Regenerate response
+            await this.sendToGeminiStreaming(userMessage, null);
+            this.hideTypingIndicator();
+            this.showFeedback('Response regenerated', 'success');
+        } catch (error) {
+            this.hideTypingIndicator();
+            this.showFeedback('Failed to regenerate', 'error');
+            console.error('Regeneration error:', error);
+        }
     }
 
     // =========================================
@@ -826,72 +1327,30 @@ Echo always adheres to this persona.
     }
 
     // =========================================
-    // MESSAGE HISTORY
+    // MESSAGE HISTORY - UPDATED FOR CONVERSATIONS
     // =========================================
-    loadMessageHistory() {
-        try {
-            const stored = localStorage.getItem(this.STORAGE_KEYS.messages);
-            const savedMode = localStorage.getItem(this.STORAGE_KEYS.mode);
-
-            if (stored) {
-                const messages = JSON.parse(stored);
-                if (messages.length > 0) {
-                    this.switchToChatMode();
-                    if (this.emptyState) {
-                        this.emptyState.style.display = 'none';
-                    }
-                    messages.forEach(msg => this.renderMessage(msg.text, msg.type, msg.timestamp, false, msg.image, msg.isMarkdown));
-                    this.updateMessageCount();
-                }
-            } else if (savedMode === 'chat') {
-                this.switchToChatMode();
-            }
-        } catch (error) {
-            console.error('Error loading message history:', error);
-        }
-    }
-
-    saveMessageHistory(message, type, imageData = null, isMarkdown = false) {
-        if (this.isGuest) return true;
-
-        try {
-            const stored = localStorage.getItem(this.STORAGE_KEYS.messages);
-            const messages = stored ? JSON.parse(stored) : [];
-
-            messages.push({
+    saveMessageToConversation(message, type, imageData = null, isMarkdown = false) {
+        const conversation = this.conversations.find(c => c.id === this.currentConversationId);
+        if (conversation) {
+            const messageData = {
                 text: message,
                 type: type,
                 timestamp: new Date().toISOString(),
                 image: imageData,
                 isMarkdown: isMarkdown
-            });
+            };
 
-            if (messages.length > this.CONFIG.MAX_STORED_MESSAGES) {
-                messages.shift();
+            conversation.messages.push(messageData);
+            conversation.messageCount = conversation.messages.length;
+            conversation.updatedAt = Date.now();
+
+            // Auto-generate title from first user message
+            if (conversation.messageCount === 1 && type === 'user' && conversation.title === 'New Chat') {
+                this.autoGenerateTitle(message);
             }
 
-            localStorage.setItem(this.STORAGE_KEYS.messages, JSON.stringify(messages));
-            return true;
-        } catch (error) {
-            if (error.name === 'QuotaExceededError') {
-                console.warn('Storage quota exceeded');
-                try {
-                    const stored = localStorage.getItem(this.STORAGE_KEYS.messages);
-                    const messages = stored ? JSON.parse(stored) : [];
-                    const prunedMessages = messages.slice(-20);
-                    localStorage.setItem(this.STORAGE_KEYS.messages, JSON.stringify(prunedMessages));
-                    this.showFeedback('Storage full - old messages removed', 'info');
-                    return true;
-                } catch (retryError) {
-                    console.error('Failed to free storage space:', retryError);
-                    this.showFeedback('Storage full - messages not saved', 'error');
-                    return false;
-                }
-            } else {
-                console.error('Error saving message:', error);
-                this.showFeedback('Failed to save message', 'error');
-                return false;
-            }
+            this.saveConversations();
+            this.updateConversationsList();
         }
     }
 
@@ -916,38 +1375,15 @@ Echo always adheres to this persona.
         }
     }
 
-    clearMessageHistory() {
+    clearCurrentConversation() {
         try {
-            const confirmed = confirm('Start a new chat? This will clear all messages.');
+            const confirmed = confirm('Start a new chat? This will clear all messages in the current conversation.');
             if (!confirmed) return;
 
-            localStorage.removeItem(this.STORAGE_KEYS.messages);
-            localStorage.removeItem(this.STORAGE_KEYS.conversationHistory);
-            this.conversationHistory = [];
-
-            if (this.messagesList) {
-                this.messagesList.innerHTML = '';
-            }
-
-            this.switchToKickoffMode();
-
-            if (this.messagesList) {
-                this.messagesList.innerHTML = `
-                    <div class="empty-state" id="emptyState">
-                        <div class="empty-icon">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                        <h3>Ready to chat</h3>
-                        <p>Your messages will appear here</p>
-                    </div>
-                `;
-                this.emptyState = document.getElementById('emptyState');
-            }
-
-            this.updateMessageCount();
-            this.showFeedback('New chat started', 'success');
+            this.createNewConversation();
+            this.showFeedback('New conversation started', 'success');
         } catch (error) {
-            console.error('Error clearing messages:', error);
+            console.error('Error clearing conversation:', error);
         }
     }
 
@@ -974,6 +1410,7 @@ Echo always adheres to this persona.
             messageEl.className = `message ${type}`;
             messageEl.setAttribute('role', 'article');
             messageEl.setAttribute('aria-label', `${type} message`);
+            messageEl.dataset.messageText = text;
 
             if (imageData) {
                 const imageEl = document.createElement('div');
@@ -1005,10 +1442,9 @@ Echo always adheres to this persona.
 
             // Apply markdown rendering for bot messages
             if (type === 'bot' && isMarkdown) {
+                contentEl.classList.add('markdown-content');
                 const htmlContent = this.parseMarkdown(text);
                 contentEl.innerHTML = htmlContent;
-
-                // Add styling for markdown elements
                 this.styleMarkdownContent(contentEl);
             } else {
                 contentEl.textContent = text;
@@ -1021,13 +1457,26 @@ Echo always adheres to this persona.
 
             messageEl.appendChild(contentEl);
             messageEl.appendChild(timeEl);
+
+            // Add actions for user messages (copy)
+            if (type === 'user') {
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'message-actions';
+                actionsContainer.innerHTML = `
+                    <button class="action-btn" onclick="app.copyMessage(this)" title="Copy message">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                `;
+                messageEl.appendChild(actionsContainer);
+            }
+
             this.messagesList.appendChild(messageEl);
 
             this.scrollToBottom();
             this.updateMessageCount();
 
             if (save) {
-                this.saveMessageHistory(text, type, imageData, isMarkdown);
+                this.saveMessageToConversation(text, type, imageData, isMarkdown);
             }
 
             return messageEl;

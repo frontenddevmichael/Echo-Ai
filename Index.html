@@ -28,6 +28,37 @@
 </head>
 
 <body>
+    <!-- Conversation Sidebar -->
+    <div class="conversation-sidebar" id="conversationSidebar">
+        <div class="sidebar-header">
+            <!-- Add this after sidebar-header -->
+            <button class="close-sidebar-btn" onclick="app.toggleSidebar()" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3>
+                <i class="fas fa-comments"></i>
+                Conversations
+            </h3>
+            <button class="new-conversation-btn" onclick="app.createNewConversation()" aria-label="New conversation">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-search">
+            <input type="text" id="conversationSearch" placeholder="Search conversations..."
+                oninput="app.searchConversations(this.value)" aria-label="Search conversations">
+            <i class="fas fa-search"></i>
+        </div>
+
+        <div class="conversations-list" id="conversationsList">
+            <!-- Dynamic conversation items will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Toggle Sidebar Button -->
+    <button class="toggle-sidebar-btn" onclick="app.toggleSidebar()" aria-label="Toggle sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
     <div class="mainPage">
         <div class="topBar">
             <div class="logo">
@@ -121,13 +152,20 @@
                                 <!-- Attachment Button -->
                                 <button class="tool-btn" aria-label="Attach file">
                                     <i class="fas fa-paperclip btn-icon-only"></i>
-                                    <span class="btn-text">Attach</span>
+                                    <span class="btn-text">Attachment</span>
                                 </button>
 
                                 <!-- Image Button -->
                                 <button class="tool-btn" aria-label="Upload image">
                                     <i class="fas fa-image btn-icon-only"></i>
-                                    <span class="btn-text">Image</span>
+                                    <span class="btn-text">Add Images</span>
+                                </button>
+
+                                <!-- Add this button in the .input-tools section -->
+                                <button class="tool-btn" id="voiceInputBtn" aria-label="Voice input"
+                                    onclick="app.isRecording ? app.stopVoiceInput() : app.startVoiceInput()">
+                                    <i class="fas fa-microphone btn-icon-only"></i>
+                                    <span class="btn-text">Voice</span>
                                 </button>
                             </div>
                             <button class="send-btn" aria-label="Send message">
