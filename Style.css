@@ -2491,7 +2491,7 @@ button .btn-icon-only {
     .topBar {
         height: 40px;
         top: 60px;
-        margin-top: 70px;
+        margin-top: 90px;
         width: 90%;
     }
 
@@ -3552,8 +3552,8 @@ body.dark-theme .conversation-sidebar {
 
 .close-sidebar-btn {
     position: absolute;
-    top: -1rem;
-    right: -.5rem;
+    top: 1rem;
+    right: .5rem;
     border: none;
     color: var(--color-text-primary);
     cursor: pointer;
