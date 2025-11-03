@@ -2842,13 +2842,17 @@ button .btn-icon-only {
 
     /* Top Bar */
     .topBar {
+        position: absolute;
+        margin: 5rem;
         height: 48px;
         padding: 0 8px;
+        box-shadow: none;
+        border: none;
     }
 
-
-
-
+    .mainPage{
+        margin-top: 7rem;
+    }
 
     /* Show only essential buttons */
     .btn button:not(:last-child):not(:nth-last-child(2)) {
