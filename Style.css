@@ -190,8 +190,8 @@ body {
 /* TOP BAR - iOS STYLE                        */
 /* =========================================== */
 .topBar {
-    position: fixed;
-    top: 10px;
+    position: absolute;
+    top: 20px;
     margin: auto;
     width: 50%;
     max-width: 1200px;
@@ -290,6 +290,7 @@ button:last-child:hover {
     align-items: center;
     padding: 48px;
     gap: 32px;
+    margin-bottom: 50px;
 }
 
 @keyframes fadeInUp {
@@ -1916,7 +1917,7 @@ body.dark-theme .empty-icon {
 
 /* Guest Badge */
 .guest-badge {
-    position: fixed;
+    position: absolute;
     top: 40px;
     right: 20px;
     display: flex;
@@ -1932,7 +1933,7 @@ body.dark-theme .empty-icon {
     font-weight: 500;
     color: var(--color-text-secondary);
     box-shadow: var(--shadow-md);
-    z-index: 1000;
+    z-index: 100;
     opacity: 0;
     animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     animation-delay: 0.2s;
@@ -2597,7 +2598,7 @@ button .btn-icon-only {
 
     /* Top Bar - Fixed positioning */
     .topBar {
-        position: fixed;
+        position: absolute;
         height: 56px;
         width: calc(100% - 16px);
         top: 8px;
@@ -5039,7 +5040,7 @@ button .btn-icon-only {
 
 /* Toggle Sidebar Button */
 .toggle-sidebar-btn {
-    position: fixed;
+    position: absolute;
     top: 20px;
     left: 20px;
     width: 44px;
@@ -5055,7 +5056,7 @@ button .btn-icon-only {
     justify-content: center;
     cursor: pointer;
     transition: var(--transition);
-    z-index: 10000000;
+    z-index: 100;
     color: var(--color-text-primary);
 }
 
